@@ -75,12 +75,6 @@ public class DB {
         ResultSetMetaData rsmd = rs.getMetaData();
         int columnsNumber = rsmd.getColumnCount();
         while (rs.next()) {
-            for (int i = 1; i <= columnsNumber; i++) {
-                if (i > 1) System.out.print(",  ");
-                String columnValue = rs.getString(i);
-                System.out.print(columnValue + " " + rsmd.getColumnName(i));
-            }
-            System.out.println("");
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("id", rs.getInt("id"));
             jsonObject.put("smiley", rs.getInt("smiley"));
@@ -125,7 +119,25 @@ public class DB {
         JSONArray jsonArray = new JSONArray();
         while (rs.next()) {
             JSONObject jsonObject = new JSONObject();
-            jsonObject.put("feedbacks in the database", rs.getInt("lc"));
+            jsonObject.put("feedbackAmount", rs.getInt("lc"));
+
+            jsonArray.add(jsonObject);
+        }
+        close(rs);
+        close(stmt);
+        return jsonArray;
+    }
+
+    public JSONArray smileyCountAll() throws SQLException {
+
+        Statement stmt;
+        Connection conn = DBConnection.connection();
+        stmt = conn.createStatement();
+        ResultSet rs = stmt.executeQuery("SELECT DISTINCT smiley, count(smiley) AS CountOf FROM feedback Group By smiley ORDER BY CountOf ASC;");
+        JSONArray jsonArray = new JSONArray();
+        while (rs.next()) {
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("SmileyRange", rs.getInt("CountOf"));
 
             jsonArray.add(jsonObject);
         }
@@ -164,11 +176,14 @@ public class DB {
 
         stmt = conn.createStatement();
 
-        PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) AS lc FROM feedback WHERE os = ?");
-        PreparedStatement ps2 = conn.prepareStatement("SELECT COUNT(*) AS lc2 FROM feedback WHERE os = ?");
+        String android = "android";
+        String ios = "ios";
 
-        ps.setString(1, os1);
-        ps2.setString(1, os2);
+        PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) AS lc FROM feedback WHERE os LIKE ?");
+        PreparedStatement ps2 = conn.prepareStatement("SELECT COUNT(*) AS lc2 FROM feedback WHERE os LIKE ?");
+
+        ps.setString(1, "%" + os1 + "%");
+        ps2.setString(1, "%" + os2 + "%");
         ResultSet rs = ps.executeQuery();
 
         JSONObject jsonObject = new JSONObject();
@@ -244,6 +259,51 @@ public class DB {
         close(rs);
         close(stmt);
         return jsonArray;
+    }
+
+    public JSONArray feedbacksPerMonth() throws SQLException {
+        Statement stmt;
+        Connection conn = DBConnection.connection();
+        stmt = conn.createStatement();
+        ResultSet rs;
+        rs = stmt.executeQuery("SELECT * FROM feedback ORDER BY time ASC");
+
+
+        JSONArray jsonArray = printDB(rs);
+        int[] yearlyData = new int[12];
+
+        for (Object o : jsonArray) {
+            JSONObject json = (JSONObject) o;
+            String time = (String) json.get("time");
+            String month = time.substring(5,7);
+            int m = Integer.parseInt(month);
+            switch (m) {
+                case 1:
+                    yearlyData[0] += 1;
+                    break;
+                case 5:
+                    yearlyData[4] += 1;
+                    break;
+                case 9:
+                    yearlyData[8] += 1;
+                    break;
+                case 10:
+                    yearlyData[9] += 1;
+                    break;
+                case 11:
+                    yearlyData[10] += 1;
+                    break;
+            }
+        }
+        close(rs);
+        close(stmt);
+
+        JSONArray result = new JSONArray();
+        for (int i = 0; i < 12; i++) {
+            result.add(yearlyData[i]);
+        }
+
+        return result;
     }
 
     //  Sort by device

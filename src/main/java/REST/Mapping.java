@@ -59,7 +59,7 @@ public class Mapping {
     //how many smileys of a specific value
     @ResponseBody
     @GetMapping("/get/linecount/smiley/{request}")
-    public JSONArray smileyLineCount(@PathVariable("request") String request) throws SQLException, Exception {
+    public JSONArray smileyLineCount(@PathVariable("request") String request ) throws SQLException, Exception {
         int reqTest = 0;
         try {
             reqTest = Integer.parseInt(request);
@@ -72,6 +72,12 @@ public class Mapping {
         else {
             throw new Exception();
         }
+    }
+
+    @ResponseBody
+    @GetMapping("/get/linecount/smiley")
+    public JSONArray smileyLineCountAll() throws SQLException, Exception {
+       return db.smileyCountAll();
     }
 
     //only feedback from a specific os
@@ -106,6 +112,12 @@ public class Mapping {
         else {
             throw new Exception();
         }
+    }
+
+    @ResponseBody
+    @GetMapping("/get/feedbacks")
+    public JSONArray timeRange() throws SQLException, Exception {
+        return db.feedbacksPerMonth();
     }
 
     // Sort by device: /get/device/asc or /get/device/desc
